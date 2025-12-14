@@ -25,18 +25,47 @@ When you interact with ChatGPT, the AI evaluates available skills and loads rele
 ## Available Skills
 
 ### 🪙 Crypto TA Analyzer
-**`crypto-ta-analyzer2/`**
+**`crypto-ta-analyzer/`**
 
-Comprehensive cryptocurrency and stock technical analysis using 24+ proven indicators. Integrates with CoinGecko for real-time market data and generates scored trading signals (STRONG_UPTREND/NEUTRAL/DOWNTREND) based on consensus across RSI, MACD, moving averages, momentum oscillators, and volume indicators.
+Comprehensive cryptocurrency and stock technical analysis using **29 proven indicators** including Bollinger Bands, Ichimoku Cloud, and On-Balance Volume with divergence detection. Features a **7-tier signal system** (STRONG_BUY → STRONG_SELL) with volume confirmation, squeeze detection, and divergence warnings.
 
-**Use for**: Price analysis, trading signals, trend identification, multi-indicator technical assessments
+**Key Features (v2.0)**:
+- **29 Indicators**: RSI, MACD, BB, OBV, Ichimoku, EMA, SMA, MFI, KDJ, SAR, VWAP, ATR + 17 more
+- **7-Tier Signals**: STRONG_BUY, BUY, WEAK_BUY, NEUTRAL, WEAK_SELL, SELL, STRONG_SELL
+- **Divergence Detection**: RSI, MACD, and OBV divergence alerts
+- **Bollinger Squeeze**: Low volatility breakout detection
+- **Volume Confirmation**: OBV/MFI agreement scoring
+- **Generic Data Converter**: Auto-detects CoinGecko, Binance, Yahoo Finance, or any OHLCV format
+- **Regime-Aware**: Adapts scoring for trending vs ranging markets
+
+**Scripts**:
+- `ta_analyzer.py` - Main analysis engine (29 indicators)
+- `data_converter.py` - Generic multi-source data converter with auto-detection
+
+**Use for**: Price analysis, trading signals, trend identification, divergence detection, breakout setups, multi-indicator technical assessments
 
 ### 📄 Document Converter Suite
 **`document-converter-suite/`**
 
-Convert between PDF, DOCX, PPTX, and XLSX formats with best-effort text-first extraction. Handles single files or batch conversions while prioritizing clean, structured output over visual fidelity.
+Convert between **8 document formats** with best-effort text-first extraction. Supports **64 conversion paths** (full 8×8 matrix) with single file or batch processing.
 
-**Use for**: Document format conversion, content extraction, batch processing
+**Supported Formats**:
+- **Office**: PDF, Word (DOCX), PowerPoint (PPTX), Excel (XLSX)
+- **Text**: Plain Text (TXT), CSV, Markdown (MD), HTML
+
+**Key Features**:
+- **64 Conversion Paths**: Any format to any format (8×8 matrix)
+- **Smart Heading Detection**: Font size + bold + ALL CAPS heuristics
+- **Multi-Table PPTX**: Creates one slide per table (no dropped tables)
+- **Data Truncation Warnings**: Alerts when XLSX data exceeds limits
+- **Batch Processing**: Recursive directory conversion with pattern matching
+- **High Fidelity**: Markdown ↔ HTML and Markdown ↔ DOCX preserve structure well
+
+**Scripts**:
+- `convert.py` - Single-file CLI converter
+- `batch_convert.py` - Batch converter for directories
+
+**Use for**: Document format conversion, content extraction, batch processing, Markdown/HTML to Office, table extraction to CSV/XLSX
 
 ### 🔧 MCP Builder
 **`mcp-builder/`**

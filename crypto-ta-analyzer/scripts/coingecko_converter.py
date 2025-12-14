@@ -5,7 +5,7 @@ Helper script to convert CoinGecko chart data to TA-compatible OHLCV format.
 
 import json
 import pandas as pd
-from typing import Dict, List
+from typing import Any, Dict, List, Tuple, Union
 
 
 def coingecko_to_ohlcv(chart_data: List[List]) -> pd.DataFrame:
@@ -76,7 +76,7 @@ def prepare_analysis_data(coingecko_json: str) -> pd.DataFrame:
     return coingecko_to_ohlcv(chart_data)
 
 
-def validate_data_quality(df: pd.DataFrame) -> Dict[str, any]:
+def validate_data_quality(df: pd.DataFrame) -> Dict[str, Any]:
     """
     Validate OHLCV data quality and return statistics.
     

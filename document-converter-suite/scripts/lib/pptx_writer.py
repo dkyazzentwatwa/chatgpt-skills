@@ -71,41 +71,47 @@ def write_pptx_from_slides(
             else:
                 tf.text = ""
 
-        # Tables: add after text, one per slide (best-effort). For multiple tables,
-        # add one table and append a note in the text.
+        # Tables: create one slide per table when multiple tables exist
         tables = s.get("tables") or []
         if tables:
-            t = tables[0]
-            if not t:
-                continue
-            rows = len(t)
-            cols = max((len(r) for r in t), default=0)
-            if rows <= 0 or cols <= 0:
-                continue
+            # Render first table on the current slide
+            for table_idx, t in enumerate(tables):
+                # For tables after the first, create new slides
+                if table_idx > 0:
+                    try:
+                        layout = prs.slide_layouts[1]  # Title + Content
+                    except Exception:
+                        layout = prs.slide_layouts[0]
 
-            # Simple positioning: below title, centered-ish
-            left = top = None
-            try:
-                from pptx.util import Inches
+                    slide = prs.slides.add_slide(layout)
+                    slide_title = s.get("title") or ""
+                    if slide.shapes.title:
+                        slide.shapes.title.text = f"{slide_title} - Table {table_idx + 1}"
 
-                left = Inches(0.5)
-                top = Inches(1.5)
-                width = Inches(9)
-                height = Inches(5)
-                shape = slide.shapes.add_table(rows, cols, left, top, width, height)
-                tbl = shape.table
-            except Exception:
-                continue
+                if not t:
+                    continue
 
-            for r_i in range(rows):
-                for c_i in range(cols):
-                    val = t[r_i][c_i] if c_i < len(t[r_i]) else ""
-                    tbl.cell(r_i, c_i).text = str(val or "")
+                rows = len(t)
+                cols = max((len(r) for r in t), default=0)
+                if rows <= 0 or cols <= 0:
+                    continue
 
-            if len(tables) > 1 and body is not None and hasattr(body, "text_frame"):
-                tf = body.text_frame
-                p = tf.add_paragraph()
-                p.text = f"(Note: {len(tables) - 1} additional table(s) not rendered.)"
-                p.level = 0
+                # Simple positioning: below title, centered-ish
+                try:
+                    from pptx.util import Inches
+
+                    left = Inches(0.5)
+                    top = Inches(1.5)
+                    width = Inches(9)
+                    height = Inches(5)
+                    shape = slide.shapes.add_table(rows, cols, left, top, width, height)
+                    tbl = shape.table
+                except Exception:
+                    continue
+
+                for r_i in range(rows):
+                    for c_i in range(cols):
+                        val = t[r_i][c_i] if c_i < len(t[r_i]) else ""
+                        tbl.cell(r_i, c_i).text = str(val or "")
 
     prs.save(str(output_path))

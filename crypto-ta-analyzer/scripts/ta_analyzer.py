@@ -457,6 +457,214 @@ def stochastic_kd(
 # MESA (MAMA/FAMA) — Ehlers-style (Hilbert Transform based)
 # =============================================================================
 
+# =============================================================================
+# NEW INDICATORS: Bollinger Bands, OBV, Ichimoku, VWAP, Divergence
+# =============================================================================
+
+def bollinger_bands(close: pd.Series, period: int = 20, std_dev: float = 2.0) -> Tuple[pd.Series, pd.Series, pd.Series, pd.Series, pd.Series]:
+    """
+    Bollinger Bands with bandwidth and %B.
+
+    Returns:
+        (middle, upper, lower, bandwidth, percent_b)
+    """
+    middle = sma(close, period)
+    std = close.rolling(period, min_periods=period).std()
+    upper = middle + std_dev * std
+    lower = middle - std_dev * std
+
+    # Bandwidth: measures volatility as % of middle band
+    bandwidth = ((upper - lower) / middle.replace(0, np.nan)) * 100.0
+
+    # %B: position of price relative to bands (0=lower, 1=upper, 0.5=middle)
+    band_range = (upper - lower).replace(0, np.nan)
+    percent_b = (close - lower) / band_range
+
+    return middle, upper, lower, bandwidth.fillna(0.0), percent_b.fillna(0.5)
+
+
+def detect_bb_squeeze(bandwidth: pd.Series, threshold: float = 5.0, min_bars: int = 6) -> bool:
+    """
+    Detect Bollinger Band squeeze (low volatility consolidation).
+
+    A squeeze occurs when bandwidth stays below threshold for min_bars periods.
+    This often precedes a significant breakout.
+    """
+    if len(bandwidth) < min_bars:
+        return False
+    recent = bandwidth.tail(min_bars)
+    return bool((recent < threshold).all())
+
+
+def obv(close: pd.Series, volume: pd.Series) -> pd.Series:
+    """
+    On-Balance Volume (OBV).
+
+    OBV is a cumulative indicator that adds volume on up days and subtracts on down days.
+    Volume precedes price - OBV divergences often signal reversals.
+    """
+    direction = np.sign(close.diff())
+    direction.iloc[0] = 0
+    return (direction * volume).cumsum()
+
+
+def obv_signal(obv_series: pd.Series, period: int = 20) -> pd.Series:
+    """OBV signal line (SMA of OBV)."""
+    return sma(obv_series, period)
+
+
+def ichimoku(
+    high: pd.Series,
+    low: pd.Series,
+    close: pd.Series,
+    tenkan_period: int = 10,
+    kijun_period: int = 30,
+    senkou_b_period: int = 60,
+) -> Dict[str, pd.Series]:
+    """
+    Ichimoku Cloud indicator (crypto-optimized periods: 10/30/60).
+
+    Components:
+    - tenkan_sen: Conversion Line (short-term trend)
+    - kijun_sen: Base Line (medium-term trend)
+    - senkou_span_a: Leading Span A (cloud boundary)
+    - senkou_span_b: Leading Span B (cloud boundary)
+    - chikou_span: Lagging Span (confirmation)
+
+    Returns dict with all components.
+    """
+    # Tenkan-sen (Conversion Line): (highest high + lowest low) / 2 for tenkan_period
+    tenkan_high = high.rolling(tenkan_period, min_periods=tenkan_period).max()
+    tenkan_low = low.rolling(tenkan_period, min_periods=tenkan_period).min()
+    tenkan_sen = (tenkan_high + tenkan_low) / 2.0
+
+    # Kijun-sen (Base Line): (highest high + lowest low) / 2 for kijun_period
+    kijun_high = high.rolling(kijun_period, min_periods=kijun_period).max()
+    kijun_low = low.rolling(kijun_period, min_periods=kijun_period).min()
+    kijun_sen = (kijun_high + kijun_low) / 2.0
+
+    # Senkou Span A (Leading Span A): (Tenkan + Kijun) / 2, shifted forward kijun_period
+    senkou_span_a = ((tenkan_sen + kijun_sen) / 2.0).shift(kijun_period)
+
+    # Senkou Span B (Leading Span B): (highest high + lowest low) / 2 for senkou_b_period, shifted forward
+    senkou_b_high = high.rolling(senkou_b_period, min_periods=senkou_b_period).max()
+    senkou_b_low = low.rolling(senkou_b_period, min_periods=senkou_b_period).min()
+    senkou_span_b = ((senkou_b_high + senkou_b_low) / 2.0).shift(kijun_period)
+
+    # Chikou Span (Lagging Span): Close shifted back kijun_period
+    chikou_span = close.shift(-kijun_period)
+
+    return {
+        "tenkan_sen": tenkan_sen,
+        "kijun_sen": kijun_sen,
+        "senkou_span_a": senkou_span_a,
+        "senkou_span_b": senkou_span_b,
+        "chikou_span": chikou_span,
+    }
+
+
+def vwap(high: pd.Series, low: pd.Series, close: pd.Series, volume: pd.Series) -> pd.Series:
+    """
+    Volume Weighted Average Price (VWAP).
+
+    VWAP = Cumulative(Typical Price * Volume) / Cumulative(Volume)
+
+    Institutional traders use VWAP as a benchmark. Price above VWAP = bullish bias.
+    """
+    typical_price = (high + low + close) / 3.0
+    tp_volume = typical_price * volume
+    cumulative_tp_vol = tp_volume.cumsum()
+    cumulative_vol = volume.cumsum().replace(0, np.nan)
+    return cumulative_tp_vol / cumulative_vol
+
+
+def detect_divergence(
+    price: pd.Series,
+    indicator: pd.Series,
+    lookback: int = 14,
+    sensitivity: float = 0.02,
+) -> str:
+    """
+    Detect bullish/bearish divergence between price and an indicator.
+
+    Divergence types:
+    - BULLISH_DIV: Price makes lower low, indicator makes higher low (reversal up)
+    - BEARISH_DIV: Price makes higher high, indicator makes lower high (reversal down)
+    - HIDDEN_BULLISH: Price higher low, indicator lower low (trend continuation)
+    - HIDDEN_BEARISH: Price lower high, indicator higher high (trend continuation)
+    - NONE: No divergence detected
+
+    Args:
+        price: Price series
+        indicator: Indicator series (RSI, MACD histogram, OBV, etc.)
+        lookback: Number of bars to analyze
+        sensitivity: Minimum % difference to consider significant
+
+    Returns:
+        Divergence type string
+    """
+    if len(price) < lookback or len(indicator) < lookback:
+        return "NONE"
+
+    # Get recent data
+    p = price.tail(lookback).values
+    ind = indicator.tail(lookback).values
+
+    # Remove NaN values
+    valid_mask = ~(np.isnan(p) | np.isnan(ind))
+    if valid_mask.sum() < lookback // 2:
+        return "NONE"
+
+    p = p[valid_mask]
+    ind = ind[valid_mask]
+
+    if len(p) < 4:
+        return "NONE"
+
+    # Find swing points (simple approach: compare first half to second half)
+    mid = len(p) // 2
+
+    # First half extremes
+    p1_low_idx = np.argmin(p[:mid])
+    p1_high_idx = np.argmax(p[:mid])
+    p1_low = p[p1_low_idx]
+    p1_high = p[p1_high_idx]
+    ind1_at_low = ind[p1_low_idx]
+    ind1_at_high = ind[p1_high_idx]
+
+    # Second half extremes
+    p2_low_idx = mid + np.argmin(p[mid:])
+    p2_high_idx = mid + np.argmax(p[mid:])
+    p2_low = p[p2_low_idx]
+    p2_high = p[p2_high_idx]
+    ind2_at_low = ind[p2_low_idx]
+    ind2_at_high = ind[p2_high_idx]
+
+    # Calculate percentage changes
+    p_low_change = (p2_low - p1_low) / (abs(p1_low) + 1e-10)
+    p_high_change = (p2_high - p1_high) / (abs(p1_high) + 1e-10)
+    ind_low_change = (ind2_at_low - ind1_at_low) / (abs(ind1_at_low) + 1e-10)
+    ind_high_change = (ind2_at_high - ind1_at_high) / (abs(ind1_at_high) + 1e-10)
+
+    # Bullish Divergence: Price lower low, Indicator higher low
+    if p_low_change < -sensitivity and ind_low_change > sensitivity:
+        return "BULLISH_DIV"
+
+    # Bearish Divergence: Price higher high, Indicator lower high
+    if p_high_change > sensitivity and ind_high_change < -sensitivity:
+        return "BEARISH_DIV"
+
+    # Hidden Bullish: Price higher low, Indicator lower low (trend continuation in uptrend)
+    if p_low_change > sensitivity and ind_low_change < -sensitivity:
+        return "HIDDEN_BULLISH"
+
+    # Hidden Bearish: Price lower high, Indicator higher high (trend continuation in downtrend)
+    if p_high_change < -sensitivity and ind_high_change > sensitivity:
+        return "HIDDEN_BEARISH"
+
+    return "NONE"
+
+
 def mama_fama(close: pd.Series, fastlimit: float = 0.5, slowlimit: float = 0.05) -> Tuple[pd.Series, pd.Series]:
     """
     Mesa Adaptive Moving Average (MAMA) + Following Adaptive Moving Average (FAMA).
@@ -609,6 +817,28 @@ class AnalyzerConfig:
     roc_period: int = 10
     mom_period: int = 10
 
+    # NEW: Bollinger Bands
+    bb_period: int = 20
+    bb_std_dev: float = 2.0
+    bb_squeeze_threshold: float = 5.0
+    bb_squeeze_min_bars: int = 6
+
+    # NEW: Ichimoku (crypto-optimized)
+    ichimoku_tenkan: int = 10
+    ichimoku_kijun: int = 30
+    ichimoku_senkou_b: int = 60
+
+    # NEW: OBV
+    obv_signal_period: int = 20
+
+    # NEW: Divergence detection
+    divergence_lookback: int = 14
+    divergence_sensitivity: float = 0.02
+
+    # NEW: Volume confirmation
+    require_volume_confirmation: bool = True
+    volume_confirmation_weight: float = 0.15
+
     # Regime thresholds
     adx_trending: float = 25.0
     adx_ranging: float = 20.0
@@ -633,24 +863,28 @@ class AnalyzerConfig:
     round_score: int = 2
 
 
-# Base weights aligned with your indicator guide (strong=1.0, medium=0.5)
+# Base weights aligned with your indicator guide (strong=1.0, medium=0.75/0.5)
 WEIGHTS: Dict[str, float] = {
-    # Strong (±1.0)
+    # Core indicators (1.0)
     "RSI": 1.0,
     "MACD": 1.0,
+    "BB": 1.0,       # NEW: Bollinger Bands
+    "OBV": 1.0,      # NEW: On-Balance Volume
     "EMA": 1.0,
     "SMA": 1.0,
-    "DEMA": 1.0,
-    "MESA": 1.0,
-    "SAR": 1.0,
-    "CCI": 1.0,
-    "AROON": 1.0,
-    "APO": 1.0,
+    "ICHIMOKU": 1.0, # NEW: Ichimoku Cloud
     "MFI": 1.0,
     "KDJ": 1.0,
-    "CAD": 1.0,
+    "SAR": 1.0,
 
-    # Medium (±0.5)
+    # Strong indicators (0.75)
+    "DEMA": 0.75,
+    "MESA": 0.75,
+    "CCI": 0.75,
+    "AROON": 0.75,
+    "APO": 0.75,
+
+    # Supporting indicators (0.5)
     "ADX": 0.5,
     "DMI": 0.5,
     "CMO": 0.5,
@@ -662,6 +896,9 @@ WEIGHTS: Dict[str, float] = {
     "TRIX": 0.5,
     "T3": 0.5,
     "WMA": 0.5,
+    "VWAP": 0.5,     # NEW: Volume Weighted Average Price
+    "ATR_SIGNAL": 0.5, # NEW: ATR as signal
+    "CAD": 0.5,
 }
 
 
@@ -682,6 +919,8 @@ CATEGORY: Dict[str, str] = {
     "PPO": "trend",
     "DMI": "trend",  # directional trend
     "ADX": "trend",  # trend strength (handled directionally in scoring)
+    "ICHIMOKU": "trend",  # NEW: multi-component trend system
+    "VWAP": "trend",      # NEW: institutional reference
 
     # Oscillators / mean reversion-ish
     "RSI": "osc",
@@ -689,12 +928,19 @@ CATEGORY: Dict[str, str] = {
     "KDJ": "osc",
     "MFI": "osc",
     "CMO": "osc",
+    "BB": "osc",          # NEW: Bollinger Bands (oscillator via %B)
 
     # Momentum / speed
     "MOMI": "mom",
     "ROC": "mom",
     "CAD": "mom",
     "AROON": "mom",  # trend timing / momentum-ish
+
+    # Volume
+    "OBV": "volume",      # NEW: On-Balance Volume
+
+    # Volatility
+    "ATR_SIGNAL": "volatility",  # NEW: ATR volatility signal
 }
 
 
@@ -718,11 +964,16 @@ class TechnicalAnalyzer:
     """
 
     INDICATOR_ORDER: List[str] = [
+        # Core indicators first
+        "RSI", "MACD", "BB", "OBV", "ICHIMOKU",
+        # Trend indicators
         "APO", "AROON", "CAD", "CMO", "CCI",
-        "DEMA", "EMA", "MACD", "MFI", "MESA",
-        "KAMA", "MOMI", "PPO", "RSI", "SAR",
+        "DEMA", "EMA", "MFI", "MESA",
+        "KAMA", "MOMI", "PPO", "SAR",
         "SMA", "TRIMA", "TRIX", "T3", "WMA",
         "ADX", "DMI", "KDJ", "ROC",
+        # New indicators
+        "VWAP", "ATR_SIGNAL",
     ]
 
     def __init__(self, ohlcv_data: pd.DataFrame, config: Optional[AnalyzerConfig] = None):
@@ -825,6 +1076,15 @@ class TechnicalAnalyzer:
                 self.values[name] = None
                 self.meta[name] = {"error": str(e)}
 
+        # Detect divergences for RSI and MACD (OBV already done in _ind_obv)
+        divergences = self._compute_divergences()
+
+        # Compute volume confirmation
+        volume_confirmation = self._compute_volume_confirmation()
+
+        # Get squeeze status
+        squeeze_detected = self._cache.get("bb_squeeze", False)
+
         # Legacy-ish signal (kept for backward compatibility with your docs)
         trade_signal_legacy = self._trade_signal_legacy(self.score_total)
 
@@ -832,7 +1092,11 @@ class TechnicalAnalyzer:
         norm = self._normalized_score(self.score_total)
         trade_signal_v2 = self._trade_signal_v2(norm)
 
-        confidence = self._confidence(norm)
+        # NEW: 7-tier signal
+        trade_signal_7tier = self._trade_signal_7tier(norm, self._confidence(norm))
+
+        # Compute confidence with volume confirmation
+        confidence = self._confidence(norm, volume_confirmation, divergences)
 
         # Trigger gating:
         # - require strong uptrend (legacy OR v2) + decent confidence
@@ -847,6 +1111,17 @@ class TechnicalAnalyzer:
         if overbought_extreme:
             self.warnings.append("Overbought extreme detected (RSI>=80 or MFI>=90): trend may be strong but risk of pullback is higher.")
 
+        # Warn about divergences
+        for ind, div in divergences.items():
+            if div == "BEARISH_DIV":
+                self.warnings.append(f"Bearish divergence detected on {ind}: potential reversal signal.")
+            elif div == "BULLISH_DIV":
+                self.warnings.append(f"Bullish divergence detected on {ind}: potential reversal signal.")
+
+        # Warn about squeeze
+        if squeeze_detected:
+            self.warnings.append("Bollinger Band squeeze detected: low volatility may precede significant breakout.")
+
         trade_trigger = bool(
             (trade_signal_v2 == "STRONG_UPTREND" or trade_signal_legacy == "STRONG_UPTREND")
             and (confidence >= self.config.min_confidence_for_trigger)
@@ -858,7 +1133,7 @@ class TechnicalAnalyzer:
         price_change_24h = self._price_change_24h()
 
         out = {
-            # legacy keys
+            # legacy keys (backward compatible)
             "scoreTotal": round(float(self.score_total), self.config.round_score),
             "tradeSignal": trade_signal_legacy,
             "tradeTrigger": trade_trigger,
@@ -872,12 +1147,122 @@ class TechnicalAnalyzer:
             "normalizedScore": round(float(norm), 4),
             "confidence": round(float(confidence), 4),
             "tradeSignalV2": trade_signal_v2,
+            "tradeSignal7Tier": trade_signal_7tier,  # NEW: 7-tier signal
             "regime": self._regime,
             "warnings": self.warnings,
             "indicatorValues": self.values,
             "indicatorMeta": self.meta,
+
+            # NEW: Additional analysis outputs
+            "divergences": divergences,
+            "squeezeDetected": squeeze_detected,
+            "volumeConfirmation": round(float(volume_confirmation), 4),
         }
         return out
+
+    def _compute_divergences(self) -> Dict[str, str]:
+        """Detect divergences for key indicators."""
+        divergences = {}
+
+        # RSI divergence
+        rsi_vals = self._cache.get("rsi")
+        if rsi_vals is not None:
+            divergences["RSI"] = detect_divergence(
+                self.close_s, rsi_vals,
+                lookback=self.config.divergence_lookback,
+                sensitivity=self.config.divergence_sensitivity
+            )
+        else:
+            divergences["RSI"] = "NONE"
+
+        # MACD histogram divergence
+        macd_data = self._cache.get("macd")
+        if macd_data is not None:
+            _, _, hist = macd_data
+            divergences["MACD"] = detect_divergence(
+                self.close_s, hist,
+                lookback=self.config.divergence_lookback,
+                sensitivity=self.config.divergence_sensitivity
+            )
+        else:
+            divergences["MACD"] = "NONE"
+
+        # OBV divergence (already computed in _ind_obv)
+        divergences["OBV"] = self._cache.get("obv_divergence", "NONE")
+
+        return divergences
+
+    def _compute_volume_confirmation(self) -> float:
+        """
+        Compute volume confirmation score (0 to 1).
+
+        High score = volume confirms price direction
+        Low score = volume diverges from price (warning)
+        """
+        confirmations = []
+
+        # OBV trend alignment
+        obv_trend = self._cache.get("obv_trend", 0)
+        price_trend = _sign(self.close_s.iloc[-1] - self.close_s.iloc[-2]) if len(self.close_s) >= 2 else 0
+
+        if obv_trend != 0 and price_trend != 0:
+            if obv_trend == price_trend:
+                confirmations.append(1.0)  # Volume confirms price
+            else:
+                confirmations.append(0.0)  # Volume diverges
+
+        # MFI agreement with price trend
+        mfi_val = self.values.get("MFI")
+        if isinstance(mfi_val, (int, float)) and not pd.isna(mfi_val):
+            if price_trend > 0:
+                # Bullish price: MFI should be > 50
+                confirmations.append(1.0 if mfi_val > 50 else 0.5 if mfi_val > 40 else 0.0)
+            elif price_trend < 0:
+                # Bearish price: MFI should be < 50
+                confirmations.append(1.0 if mfi_val < 50 else 0.5 if mfi_val < 60 else 0.0)
+
+        # OBV divergence penalty
+        obv_div = self._cache.get("obv_divergence", "NONE")
+        if obv_div in ("BEARISH_DIV", "BULLISH_DIV"):
+            confirmations.append(0.2)  # Strong divergence = low confirmation
+        elif obv_div in ("HIDDEN_BEARISH", "HIDDEN_BULLISH"):
+            confirmations.append(0.5)  # Hidden divergence = moderate
+        else:
+            confirmations.append(0.8)  # No divergence = good
+
+        return float(np.mean(confirmations)) if confirmations else 0.5
+
+    def _trade_signal_7tier(self, normalized: float, confidence: float) -> str:
+        """
+        7-tier signal system for more granular trading decisions.
+
+        Returns one of:
+        - STRONG_BUY: High confidence bullish
+        - BUY: Moderate confidence bullish
+        - WEAK_BUY: Low confidence bullish
+        - NEUTRAL: No clear direction
+        - WEAK_SELL: Low confidence bearish
+        - SELL: Moderate confidence bearish
+        - STRONG_SELL: High confidence bearish
+        """
+        # Bullish signals
+        if normalized >= 0.5 and confidence >= 0.7:
+            return "STRONG_BUY"
+        if normalized >= 0.35 and confidence >= 0.5:
+            return "BUY"
+        if normalized >= 0.2:
+            return "WEAK_BUY"
+
+        # Bearish signals
+        if normalized <= -0.5 and confidence >= 0.7:
+            return "STRONG_SELL"
+        if normalized <= -0.35 and confidence >= 0.5:
+            return "SELL"
+        if normalized <= -0.2:
+            return "WEAK_SELL"
+
+        # Neutral
+        return "NEUTRAL"
 
     # ----------------------------
     # Regime helpers
@@ -955,21 +1340,43 @@ class TechnicalAnalyzer:
             },
         }
 
-    def _mult(self, indicator: str) -> float:
+    def _mult(self, indicator: str, skip_regime: bool = False) -> float:
+        """
+        Get multiplier for indicator based on regime.
+
+        Args:
+            indicator: Indicator name
+            skip_regime: If True, skip regime multiplier (for indicators with built-in regime logic)
+        """
+        if skip_regime:
+            return 1.0
+
         cat = CATEGORY.get(indicator, "trend")
-        m = float(self._regime.get("multipliers", {}).get(cat, 1.0))
+        mults = self._regime.get("multipliers", {})
+
+        # Map categories to multiplier keys
+        if cat in ("trend", "volume", "volatility"):
+            m = float(mults.get("trend", 1.0))
+        elif cat == "osc":
+            m = float(mults.get("osc", 1.0))
+        elif cat == "mom":
+            # Momentum gets slight trend bias
+            m = float(mults.get("trend", 1.0)) * 0.9 + float(mults.get("osc", 1.0)) * 0.1
+        else:
+            m = 1.0
+
         # Optional extra boost for adaptive indicators when vol is elevated
-        if indicator in ("SAR", "KAMA", "MESA"):
-            m *= float(self._regime.get("multipliers", {}).get("adaptive", 1.0))
+        if indicator in ("SAR", "KAMA", "MESA", "BB"):
+            m *= float(mults.get("adaptive", 1.0))
         return m
 
     # ----------------------------
     # Score + signal utilities
     # ----------------------------
 
-    def _add(self, name: str, raw_score: float, signal: str, value: Any = None, meta: Optional[Dict[str, Any]] = None) -> None:
+    def _add(self, name: str, raw_score: float, signal: str, value: Any = None, meta: Optional[Dict[str, Any]] = None, skip_regime: bool = False) -> None:
         w = float(WEIGHTS.get(name, 0.0))
-        m = float(self._mult(name))
+        m = float(self._mult(name, skip_regime=skip_regime))
         score = raw_score * w * m
 
         self.score_total += float(score)
@@ -1022,31 +1429,55 @@ class TechnicalAnalyzer:
             return "DOWNTREND"
         return "NEUTRAL"
 
-    def _confidence(self, normalized: float) -> float:
+    def _confidence(self, normalized: float, volume_confirmation: float = 0.5, divergences: Optional[Dict[str, str]] = None) -> float:
         """
         Confidence heuristic (0..1):
         - more agreement (|normalized|) -> higher
         - stronger trend (ADX) -> higher
+        - volume confirms direction -> higher
+        - divergences present -> lower
         - too much volatility -> slightly lower
         - missing indicators -> lower
         """
-        # coverage
+        # Coverage
         total = len(self.INDICATOR_ORDER)
         computed = sum(1 for k in self.INDICATOR_ORDER if k in self.signals and self.values.get(k, None) is not None)
         coverage = computed / total if total else 0.0
 
+        # ADX score
         adx = self._regime.get("adx")
         adx_score = _clamp((float(adx) if adx is not None else 0.0) / 50.0, 0.0, 1.0)
 
+        # Volatility penalty
         atr_pct = self._regime.get("atrPct")
-        # Gentle penalty past ~5% ATR (scale depends on timeframe; keep mild)
         vol_penalty = 0.0
         if atr_pct is not None:
             vol_penalty = _clamp((float(atr_pct) - 5.0) / 20.0, 0.0, 0.5)
 
+        # Alignment score
         alignment = abs(float(normalized))
 
-        conf = 0.40 * alignment + 0.25 * adx_score + 0.25 * coverage + 0.10 * (1.0 - vol_penalty)
+        # Divergence penalty
+        divergence_penalty = 0.0
+        if divergences:
+            for div_type in divergences.values():
+                if div_type in ("BEARISH_DIV", "BULLISH_DIV"):
+                    divergence_penalty += 0.1  # Strong divergence = penalty
+                elif div_type in ("HIDDEN_BEARISH", "HIDDEN_BULLISH"):
+                    divergence_penalty += 0.05  # Hidden divergence = smaller penalty
+
+        # Volume confirmation bonus
+        vol_confirm_bonus = volume_confirmation * self.config.volume_confirmation_weight
+
+        # Improved confidence formula
+        conf = (
+            0.30 * alignment +
+            0.20 * adx_score +
+            0.15 * coverage +
+            0.15 * volume_confirmation +
+            0.10 * (1.0 - divergence_penalty) +
+            0.10 * (1.0 - vol_penalty)
+        )
         conf = _clamp(conf, 0.0, 1.0)
         return float(conf)
 
@@ -1120,9 +1551,10 @@ class TechnicalAnalyzer:
         self._add("AROON", raw_score=raw, signal=sig, value={"up": up, "down": dn})
 
     def _ind_adx(self) -> None:
-        plus_di, minus_di, adx_vals = self._cache.get("dmi_adx") or dmi_adx(self.high_s, self.low_s, self.close_s, period=self.config.dmi_period)
-        # Ensure cache set even if accessed here first
-        self._cache["dmi_adx"] = (plus_di, minus_di, adx_vals)
+        plus_di, minus_di, adx_vals = self._get_cached(
+            "dmi_adx",
+            lambda: dmi_adx(self.high_s, self.low_s, self.close_s, period=self.config.dmi_period)
+        )
 
         adx_cur = safe_last(adx_vals, np.nan)
         plus_cur = safe_last(plus_di, np.nan)
@@ -1220,8 +1652,10 @@ class TechnicalAnalyzer:
         self._add("DEMA", raw_score=raw, signal=sig, value=cur, meta={"prev": prev})
 
     def _ind_dmi(self) -> None:
-        plus_di, minus_di, adx_vals = self._cache.get("dmi_adx") or dmi_adx(self.high_s, self.low_s, self.close_s, period=self.config.dmi_period)
-        self._cache["dmi_adx"] = (plus_di, minus_di, adx_vals)
+        plus_di, minus_di, adx_vals = self._get_cached(
+            "dmi_adx",
+            lambda: dmi_adx(self.high_s, self.low_s, self.close_s, period=self.config.dmi_period)
+        )
 
         p = safe_last(plus_di, np.nan)
         m = safe_last(minus_di, np.nan)
@@ -1491,6 +1925,261 @@ class TechnicalAnalyzer:
         raw = float(state) * (1.0 if state == slope and state != 0 else 0.5 if state != 0 else 0.0)
         sig = self._signal_from_raw(raw, buy_th=0.25, sell_th=-0.25)
         self._add("WMA", raw_score=raw, signal=sig, value=cur, meta={"prev": prev})
+
+    # ==========================================================================
+    # NEW INDICATOR SCORERS
+    # ==========================================================================
+
+    def _ind_bb(self) -> None:
+        """Bollinger Bands with squeeze detection."""
+        middle, upper, lower, bandwidth, percent_b = self._get_cached(
+            "bb",
+            lambda: bollinger_bands(self.close_s, period=self.config.bb_period, std_dev=self.config.bb_std_dev)
+        )
+
+        price = float(self.close_s.iloc[-1])
+        upper_cur = safe_last(upper, np.nan)
+        lower_cur = safe_last(lower, np.nan)
+        middle_cur = safe_last(middle, np.nan)
+        bw_cur = safe_last(bandwidth, np.nan)
+        pct_b_cur = safe_last(percent_b, np.nan)
+
+        # Detect squeeze
+        squeeze = detect_bb_squeeze(
+            bandwidth,
+            threshold=self.config.bb_squeeze_threshold,
+            min_bars=self.config.bb_squeeze_min_bars
+        )
+
+        # Scoring based on %B and regime
+        regime = self._regime.get("regime", "TRANSITION")
+
+        if regime == "RANGING":
+            # Mean reversion: overbought/oversold at band extremes
+            if pct_b_cur <= 0.0:
+                raw = 1.0  # Below lower band = oversold = buy signal
+            elif pct_b_cur >= 1.0:
+                raw = -1.0  # Above upper band = overbought = sell signal
+            elif pct_b_cur < 0.2:
+                raw = 0.5
+            elif pct_b_cur > 0.8:
+                raw = -0.5
+            else:
+                raw = 0.0
+        else:
+            # Trending: breakouts are continuation signals
+            if pct_b_cur >= 1.0:
+                raw = 0.75  # Riding upper band = strong uptrend
+            elif pct_b_cur <= 0.0:
+                raw = -0.75  # Riding lower band = strong downtrend
+            elif pct_b_cur > 0.5:
+                raw = _clamp((pct_b_cur - 0.5) * 2, 0, 0.5)
+            elif pct_b_cur < 0.5:
+                raw = _clamp((pct_b_cur - 0.5) * 2, -0.5, 0)
+            else:
+                raw = 0.0
+
+        sig = self._signal_from_raw(raw)
+        self._add("BB", raw_score=raw, signal=sig, value={
+            "upper": upper_cur,
+            "middle": middle_cur,
+            "lower": lower_cur,
+            "bandwidth": bw_cur,
+            "percentB": pct_b_cur,
+            "squeeze": squeeze
+        }, skip_regime=True)  # Has built-in regime logic
+
+        # Store squeeze detection for output
+        self._cache["bb_squeeze"] = squeeze
+
+    def _ind_obv(self) -> None:
+        """On-Balance Volume with divergence detection."""
+        obv_vals = self._get_cached("obv", lambda: obv(self.close_s, self.volume_s))
+        obv_sig = self._get_cached("obv_signal", lambda: obv_signal(obv_vals, period=self.config.obv_signal_period))
+
+        obv_cur = safe_last(obv_vals, np.nan)
+        obv_prev = safe_prev(obv_vals, np.nan)
+        sig_cur = safe_last(obv_sig, np.nan)
+        sig_prev = safe_prev(obv_sig, np.nan)
+
+        # State: OBV above/below signal line
+        state = _sign(obv_cur - sig_cur)
+
+        # Trigger: OBV crossing signal line
+        trig = 0
+        if obv_prev <= sig_prev and obv_cur > sig_cur:
+            trig = 1
+        elif obv_prev >= sig_prev and obv_cur < sig_cur:
+            trig = -1
+
+        # Detect divergence
+        div = detect_divergence(
+            self.close_s,
+            obv_vals,
+            lookback=self.config.divergence_lookback,
+            sensitivity=self.config.divergence_sensitivity
+        )
+
+        # Base score
+        raw = self._score_state_trigger(state, trig, state_weight=0.6, trigger_weight=0.4)
+
+        # Adjust for divergence
+        if div == "BULLISH_DIV":
+            raw = _clamp(raw + 0.3, -1.0, 1.0)
+        elif div == "BEARISH_DIV":
+            raw = _clamp(raw - 0.3, -1.0, 1.0)
+
+        sig = self._signal_from_raw(raw)
+        self._add("OBV", raw_score=raw, signal=sig, value={
+            "obv": obv_cur,
+            "signal": sig_cur,
+            "divergence": div
+        })
+
+        # Store for volume confirmation
+        self._cache["obv_divergence"] = div
+        self._cache["obv_trend"] = state
+
+    def _ind_ichimoku(self) -> None:
+        """Ichimoku Cloud indicator (crypto-optimized)."""
+        ichi = self._get_cached(
+            "ichimoku",
+            lambda: ichimoku(
+                self.high_s, self.low_s, self.close_s,
+                tenkan_period=self.config.ichimoku_tenkan,
+                kijun_period=self.config.ichimoku_kijun,
+                senkou_b_period=self.config.ichimoku_senkou_b
+            )
+        )
+
+        price = float(self.close_s.iloc[-1])
+        tenkan = safe_last(ichi["tenkan_sen"], np.nan)
+        kijun = safe_last(ichi["kijun_sen"], np.nan)
+        span_a = safe_last(ichi["senkou_span_a"], np.nan)
+        span_b = safe_last(ichi["senkou_span_b"], np.nan)
+
+        # Determine cloud bounds
+        cloud_top = max(span_a, span_b) if not (pd.isna(span_a) or pd.isna(span_b)) else np.nan
+        cloud_bottom = min(span_a, span_b) if not (pd.isna(span_a) or pd.isna(span_b)) else np.nan
+
+        # Cloud color: A > B = bullish (green), A < B = bearish (red)
+        cloud_bullish = span_a > span_b if not (pd.isna(span_a) or pd.isna(span_b)) else None
+
+        # Multiple signals combined:
+        signals_score = 0.0
+        signals_count = 0
+
+        # 1. Price vs Cloud
+        if not pd.isna(cloud_top) and not pd.isna(cloud_bottom):
+            if price > cloud_top:
+                signals_score += 1.0  # Price above cloud = bullish
+            elif price < cloud_bottom:
+                signals_score -= 1.0  # Price below cloud = bearish
+            else:
+                signals_score += 0.0  # Price in cloud = neutral
+            signals_count += 1
+
+        # 2. Tenkan/Kijun cross
+        if not pd.isna(tenkan) and not pd.isna(kijun):
+            if tenkan > kijun:
+                signals_score += 0.5  # Bullish cross
+            elif tenkan < kijun:
+                signals_score -= 0.5  # Bearish cross
+            signals_count += 1
+
+        # 3. Cloud color
+        if cloud_bullish is not None:
+            signals_score += 0.25 if cloud_bullish else -0.25
+            signals_count += 1
+
+        # Average the signals
+        raw = float(signals_score / signals_count) if signals_count > 0 else 0.0
+        raw = _clamp(raw, -1.0, 1.0)
+
+        sig = self._signal_from_raw(raw, buy_th=0.2, sell_th=-0.2)
+        self._add("ICHIMOKU", raw_score=raw, signal=sig, value={
+            "tenkan": tenkan,
+            "kijun": kijun,
+            "senkouA": span_a,
+            "senkouB": span_b,
+            "cloudTop": cloud_top,
+            "cloudBottom": cloud_bottom,
+            "cloudBullish": cloud_bullish,
+            "priceVsCloud": "ABOVE" if price > cloud_top else "BELOW" if price < cloud_bottom else "INSIDE"
+        })
+
+    def _ind_vwap(self) -> None:
+        """Volume Weighted Average Price."""
+        vwap_vals = self._get_cached(
+            "vwap",
+            lambda: vwap(self.high_s, self.low_s, self.close_s, self.volume_s)
+        )
+
+        price = float(self.close_s.iloc[-1])
+        vwap_cur = safe_last(vwap_vals, np.nan)
+        vwap_prev = safe_prev(vwap_vals, np.nan)
+
+        if pd.isna(vwap_cur):
+            raw = 0.0
+        else:
+            # Price above VWAP = bullish, below = bearish
+            diff_pct = (price - vwap_cur) / vwap_cur * 100 if vwap_cur != 0 else 0.0
+            state = _sign(diff_pct)
+
+            # Slope of VWAP
+            slope = _sign(vwap_cur - vwap_prev) if not pd.isna(vwap_prev) else 0
+
+            # Stronger signal when price and VWAP slope agree
+            raw = float(state) * (0.75 if state == slope else 0.5)
+
+        sig = self._signal_from_raw(raw, buy_th=0.25, sell_th=-0.25)
+        self._add("VWAP", raw_score=raw, signal=sig, value=vwap_cur)
+
+    def _ind_atr_signal(self) -> None:
+        """ATR as volatility signal indicator."""
+        atr_vals = self._get_cached(
+            "atr",
+            lambda: atr(self.high_s, self.low_s, self.close_s, period=self.config.dmi_period)
+        )
+
+        atr_cur = safe_last(atr_vals, np.nan)
+        atr_prev = safe_prev(atr_vals, np.nan)
+        price = float(self.close_s.iloc[-1])
+
+        if pd.isna(atr_cur) or price == 0:
+            raw = 0.0
+            atr_pct = np.nan
+        else:
+            atr_pct = (atr_cur / price) * 100
+
+            # ATR contraction (low volatility) = potential breakout setup
+            # ATR expansion (high volatility) = trend in progress
+            vol_ratio = self._regime.get("volRatio", 1.0)
+
+            if vol_ratio is not None and not pd.isna(vol_ratio):
+                if vol_ratio < 0.7:
+                    # Low volatility contraction - neutral, but breakout potential
+                    raw = 0.25  # Slight bullish bias for breakout
+                elif vol_ratio > 1.5:
+                    # High volatility - confirm with trend direction
+                    dmi_dir = self._regime.get("dmiDirection", "FLAT")
+                    if dmi_dir == "UP":
+                        raw = 0.5
+                    elif dmi_dir == "DOWN":
+                        raw = -0.5
+                    else:
+                        raw = 0.0
+                else:
+                    raw = 0.0
+            else:
+                raw = 0.0
+
+        sig = self._signal_from_raw(raw)
+        self._add("ATR_SIGNAL", raw_score=raw, signal=sig, value={
+            "atr": atr_cur,
+            "atrPct": atr_pct,
+            "volRatio": self._regime.get("volRatio")
+        })
 
 
 # =============================================================================

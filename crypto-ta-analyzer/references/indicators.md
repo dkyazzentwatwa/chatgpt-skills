@@ -1,14 +1,85 @@
 # Technical Indicator Reference Guide
 
-Comprehensive guide to all 24+ technical indicators used in the crypto-ta-analyzer skill.
+Comprehensive guide to all 29 technical indicators used in the crypto-ta-analyzer skill.
 
 ## Table of Contents
 
-1. [Trend Indicators](#trend-indicators)
-2. [Momentum Indicators](#momentum-indicators)
-3. [Volume Indicators](#volume-indicators)
-4. [Volatility Indicators](#volatility-indicators)
-5. [Scoring System](#scoring-system)
+1. [New Indicators (v2)](#new-indicators-v2)
+2. [Trend Indicators](#trend-indicators)
+3. [Momentum Indicators](#momentum-indicators)
+4. [Volume Indicators](#volume-indicators)
+5. [Volatility Indicators](#volatility-indicators)
+6. [Divergence Detection](#divergence-detection)
+7. [Scoring System](#scoring-system)
+
+---
+
+## New Indicators (v2)
+
+### Bollinger Bands (BB)
+**Weight**: 1.0
+**Parameters**: period=20, std_dev=2.0, squeeze_threshold=5.0
+
+Volatility-based bands around a moving average. Key components:
+- **Middle Band**: 20-period SMA
+- **Upper Band**: Middle + 2σ (standard deviations)
+- **Lower Band**: Middle - 2σ
+- **Bandwidth**: (Upper - Lower) / Middle * 100
+- **%B**: (Price - Lower) / (Upper - Lower) — position within bands
+
+**Signals**:
+- In RANGING markets: Mean reversion (buy at lower band, sell at upper)
+- In TRENDING markets: Breakout continuation (riding bands is bullish/bearish)
+- **Squeeze Detection**: When bandwidth < threshold for 6+ bars, low volatility may precede breakout
+
+### On-Balance Volume (OBV)
+**Weight**: 1.0
+**Parameters**: signal_period=20
+
+Cumulative volume indicator that adds volume on up days, subtracts on down days.
+**Formula**: OBV = prev_OBV ± volume (based on close vs prev_close)
+
+**Signals**:
+- OBV above signal line = bullish
+- OBV crossing above signal = buy trigger
+- **Divergence**: OBV diverging from price often precedes reversals (volume leads price)
+
+### Ichimoku Cloud
+**Weight**: 1.0
+**Parameters**: tenkan=10, kijun=30, senkou_b=60 (crypto-optimized)
+
+Multi-component Japanese trend system. Components:
+- **Tenkan-sen (Conversion)**: (10-period high + low) / 2
+- **Kijun-sen (Base)**: (30-period high + low) / 2
+- **Senkou Span A**: (Tenkan + Kijun) / 2, shifted forward
+- **Senkou Span B**: (60-period high + low) / 2, shifted forward
+- **Cloud (Kumo)**: Area between Senkou A and B
+
+**Signals**:
+- Price above cloud = bullish, below = bearish, inside = neutral
+- Tenkan above Kijun = bullish cross
+- Cloud color (A > B = green/bullish)
+
+### VWAP (Volume Weighted Average Price)
+**Weight**: 0.5
+
+Institutional benchmark price. **Formula**: Cumulative(TP * Volume) / Cumulative(Volume)
+
+**Signals**:
+- Price above VWAP = bullish bias
+- Price below VWAP = bearish bias
+- Used by institutions for execution benchmarks
+
+### ATR Signal
+**Weight**: 0.5
+**Parameters**: period=14
+
+ATR (Average True Range) exposed as a signal indicator for volatility-based trading.
+
+**Signals**:
+- Low volatility (ATR contraction) = potential breakout setup
+- High volatility + trending = trend confirmation
+- Combines with regime detection for context-aware signals
 
 ---
 
@@ -173,46 +244,116 @@ Component of ADX - +DI and -DI lines show directional movement.
 
 ---
 
+## Divergence Detection
+
+Divergences occur when price and indicator move in opposite directions, often signaling reversals.
+
+### Types of Divergence
+
+**Regular Bullish Divergence**:
+- Price makes lower low
+- Indicator makes higher low
+- Signal: Potential reversal upward
+
+**Regular Bearish Divergence**:
+- Price makes higher high
+- Indicator makes lower high
+- Signal: Potential reversal downward
+
+**Hidden Bullish Divergence**:
+- Price makes higher low
+- Indicator makes lower low
+- Signal: Trend continuation in uptrend
+
+**Hidden Bearish Divergence**:
+- Price makes lower high
+- Indicator makes higher high
+- Signal: Trend continuation in downtrend
+
+### Indicators with Divergence Detection
+
+1. **RSI**: Most common divergence indicator
+2. **MACD Histogram**: Reliable for momentum divergences
+3. **OBV**: Most reliable — volume precedes price
+
+### Divergence Confidence Ranking
+
+1. **OBV divergence**: Highest reliability (volume leads price)
+2. **RSI divergence**: High reliability on longer timeframes
+3. **MACD divergence**: Good for momentum shifts
+
+---
+
 ## Scoring System
 
-### Score Weights
+### Score Weights (Updated v2)
 
 Each indicator contributes to the total score based on its signal:
 
-- **Strong signals**: ±1.0 (RSI, MACD, EMA, SMA, DEMA, MESA, SAR, CCI, AROON, APO, MFI, KDJ)
-- **Medium signals**: ±0.5 (ADX, CMO, DMI, KAMA, MOMI, PPO, ROC, TRIMA, TRIX, T3, WMA)
+**Core (1.0)**: RSI, MACD, BB, OBV, ICHIMOKU, EMA, SMA, MFI, KDJ, SAR
+**Strong (0.75)**: DEMA, MESA, CCI, AROON, APO
+**Supporting (0.5)**: ADX, DMI, CMO, KAMA, MOMI, PPO, ROC, TRIMA, TRIX, T3, WMA, VWAP, ATR_SIGNAL, CAD
 
-### Interpretation
+### 7-Tier Signal System (NEW)
+
+**STRONG_BUY**: Normalized score >= 0.5, confidence >= 0.7
+**BUY**: Normalized score >= 0.35, confidence >= 0.5
+**WEAK_BUY**: Normalized score >= 0.2
+**NEUTRAL**: -0.2 < normalized < 0.2
+**WEAK_SELL**: Normalized score <= -0.2
+**SELL**: Normalized score <= -0.35, confidence >= 0.5
+**STRONG_SELL**: Normalized score <= -0.5, confidence >= 0.7
+
+### Legacy Interpretation (backward compatible)
 
 **Total Score >= 7.0**: **STRONG UPTREND**
-- Multiple indicators confirm bullish momentum
-- High probability of continued upward movement
-- Consider long positions
-
 **Total Score 3.0 - 6.9**: **NEUTRAL**
-- Mixed signals across indicators
-- Market consolidation or transition phase
-- Wait for clearer direction
-
 **Total Score < 3.0**: **DOWNTREND**
-- Multiple indicators confirm bearish momentum
-- High probability of continued downward movement
-- Avoid long positions, consider shorts
+
+### Confidence Calculation
+
+Confidence is computed from multiple factors:
+- **Alignment** (30%): How much indicators agree
+- **ADX Score** (20%): Trend strength
+- **Coverage** (15%): % of indicators computed
+- **Volume Confirmation** (15%): OBV/MFI agreement
+- **Divergence Penalty** (10%): Lower if divergences detected
+- **Volatility Adjustment** (10%): Lower in extreme volatility
+
+### Volume Confirmation
+
+New factor that measures if volume supports price direction:
+- OBV trend matching price trend = +1.0
+- MFI agreeing with price direction = +0.5 to +1.0
+- No OBV divergence = +0.8
 
 ### Best Practices
 
 1. **Never trade on single indicator** - the scoring system's strength is in consensus
-2. **Consider market context** - indicators work differently in trending vs ranging markets
-3. **Use multiple timeframes** - confirm signals across different periods
-4. **Watch for divergences** - when price and indicators disagree, reversal may be coming
-5. **Volume confirms price** - MFI adds crucial volume context to price-based indicators
+2. **Watch divergences** - especially OBV divergences (volume leads price)
+3. **Monitor BB squeeze** - low volatility often precedes breakouts
+4. **Use Ichimoku cloud** - price position vs cloud is strong trend filter
+5. **Check volume confirmation** - ensure volume supports the signal
+6. **Consider market regime** - trending vs ranging affects indicator reliability
 
-### Indicator Combinations
+### High Conviction Setups
 
-**High Conviction Bullish**: RSI <30 + MACD crossover + Price above MESA + ADX >25  
-**High Conviction Bearish**: RSI >70 + MACD crossunder + Price below MESA + ADX >25  
-**Trend Exhaustion**: Score >7 but RSI >80 or MFI >90 (overbought warning)  
-**False Breakout**: Strong price move but ADX <20 and volume declining
+**Strong Buy Setup**:
+- 7-tier: STRONG_BUY or BUY
+- Confidence >= 0.7
+- Price above Ichimoku cloud
+- OBV confirms (no bearish divergence)
+- No BB squeeze (or just breaking out of squeeze)
+
+**Breakout Setup**:
+- BB squeeze detected
+- ADX rising from < 20
+- Watch for band expansion with volume
+
+**Reversal Warning**:
+- Bearish divergence on RSI/MACD/OBV
+- Price at upper BB (%B > 1.0)
+- RSI > 70 or MFI > 80
 
 ---
 
@@ -221,11 +362,12 @@ Each indicator contributes to the total score based on its signal:
 - **Lagging nature**: Most indicators are calculated from past data
 - **False signals**: Can generate whipsaws in choppy markets
 - **Market regime changes**: What works in trends may fail in ranges
-- **Overfitting**: Too many indicators can lead to analysis paralysis
-- **CoinGecko data**: Price-only data means OHLC is approximated from adjacent points
+- **Divergences**: Not all divergences lead to reversals
+- **OHLC approximation**: Price-only data sources approximate high/low
 
 ### Recommended Minimum Data
 
 - **Absolute minimum**: 50 data points
 - **Recommended**: 100+ data points for reliable signals
 - **Optimal**: 200+ data points for comprehensive analysis
+- **Ichimoku**: Requires 60+ bars for full cloud calculation

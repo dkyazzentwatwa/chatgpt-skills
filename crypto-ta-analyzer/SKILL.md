@@ -1,18 +1,19 @@
 ---
 name: crypto-ta-analyzer
-description: Comprehensive cryptocurrency and stock technical analysis using 24+ proven indicators. Use when users request price analysis, trading signals, trend identification, or multi-indicator technical assessments for crypto or stocks. Integrates with CoinGecko MCP tools for real-time market data. Generates scored trading signals (STRONG_UPTREND/NEUTRAL/DOWNTREND) based on consensus across RSI, MACD, moving averages, momentum oscillators, and volume indicators.
+description: Comprehensive cryptocurrency and stock technical analysis using 29+ proven indicators including Bollinger Bands, Ichimoku Cloud, and OBV with divergence detection. Generates 7-tier trading signals (STRONG_BUY to STRONG_SELL) with volume confirmation, squeeze detection, and divergence warnings. Supports multiple data sources beyond CoinGecko.
 ---
 
 # Crypto & Stock Technical Analysis
 
-Multi-indicator technical analysis system that generates high-confidence trading signals by combining 24+ proven algorithms. Ideal for cryptocurrency and stock market analysis.
+Multi-indicator technical analysis system that generates high-confidence trading signals by combining 29+ proven algorithms. Features divergence detection, Bollinger Band squeeze alerts, volume confirmation, and a 7-tier signal system. Ideal for cryptocurrency and stock market analysis.
 
 ## Core Workflow
 
-### 1. Data Acquisition via CoinGecko
+### 1. Data Acquisition
 
-First, fetch historical price data using CoinGecko MCP tools:
+Fetch historical price data from any supported source:
 
+**CoinGecko (via MCP tools):**
 ```
 Use coingecko_get_historical_chart tool with:
 - coin_id: Target cryptocurrency (e.g., 'bitcoin', 'ethereum')
@@ -20,29 +21,39 @@ Use coingecko_get_historical_chart tool with:
 - vs_currency: Base currency (default 'usd')
 ```
 
+**Other Supported Sources:**
+- Exchange APIs (Binance, Coinbase, etc.) - OHLCV format
+- Yahoo Finance - Stock data
+- Any price-only data - Automatic OHLC approximation
+
 **Minimum Requirements**:
-- At least 100 data points for reliable analysis
-- Price, market cap, and volume data
+- At least 100 data points for reliable analysis (50 minimum)
+- Price data required, volume recommended
 - Recent data preferred for active trading signals
 
-### 2. Convert CoinGecko Data to OHLCV Format
+### 2. Convert Data to OHLCV Format
 
-Run the converter script to prepare data:
+The generic data converter auto-detects and normalizes any supported format:
 
 ```python
-python3 scripts/coingecko_converter.py
-```
+from scripts.data_converter import normalize_ohlcv, validate_data_quality
 
-Or programmatically:
-```python
-from scripts.coingecko_converter import prepare_analysis_data, validate_data_quality
-import json
+# Auto-detect format and convert
+ohlcv_df, metadata = normalize_ohlcv(raw_data, source="auto")
 
-# Convert CoinGecko JSON to OHLCV DataFrame
-ohlcv_df = prepare_analysis_data(coingecko_json_data)
+# Check conversion quality
+print(f"Format detected: {metadata['detected_format']}")
+print(f"Rows: {metadata['original_rows']} -> {metadata['final_rows']}")
+print(f"Warnings: {metadata['warnings']}")
 
 # Validate data quality
 quality_report = validate_data_quality(ohlcv_df)
+```
+
+**Backward compatible** with old CoinGecko converter:
+```python
+from scripts.data_converter import prepare_analysis_data
+ohlcv_df = prepare_analysis_data(coingecko_json_data)
 ```
 
 ### 3. Run Technical Analysis
@@ -65,69 +76,104 @@ print(json.dumps(results, indent=2))
 
 ### 4. Interpret Results
 
-Analysis returns:
+Analysis returns comprehensive data including new features:
 ```json
 {
   "scoreTotal": 8.5,
   "tradeSignal": "STRONG_UPTREND",
+  "tradeSignal7Tier": "STRONG_BUY",
   "tradeTrigger": true,
   "currentPrice": 45234.56,
   "priceChange24h": 3.45,
+  "confidence": 0.75,
+  "normalizedScore": 0.42,
+  "volumeConfirmation": 0.85,
+  "squeezeDetected": false,
+  "divergences": {
+    "RSI": "NONE",
+    "MACD": "NONE",
+    "OBV": "NONE"
+  },
   "individualScores": {
     "RSI": 1.0,
     "MACD": 1.0,
-    "EMA": 1.0,
+    "BB": 0.75,
+    "OBV": 0.8,
+    "ICHIMOKU": 1.0,
     ...
   },
   "individualSignals": {
     "RSI": "BUY",
     "MACD": "BUY",
-    "EMA": "BUY",
+    "BB": "BUY",
     ...
-  }
+  },
+  "regime": {
+    "regime": "TRENDING",
+    "adx": 32.5,
+    "dmiDirection": "UP"
+  },
+  "warnings": []
 }
 ```
 
-**Signal Interpretation**:
+**7-Tier Signal System** (NEW):
+- **STRONG_BUY**: High confidence bullish (normalized >= 0.5, confidence >= 0.7)
+- **BUY**: Moderate confidence bullish (normalized >= 0.35, confidence >= 0.5)
+- **WEAK_BUY**: Low confidence bullish (normalized >= 0.2)
+- **NEUTRAL**: No clear direction
+- **WEAK_SELL**: Low confidence bearish (normalized <= -0.2)
+- **SELL**: Moderate confidence bearish (normalized <= -0.35, confidence >= 0.5)
+- **STRONG_SELL**: High confidence bearish (normalized <= -0.5, confidence >= 0.7)
+
+**Legacy Signal Interpretation** (backward compatible):
 - **scoreTotal >= 7.0**: STRONG_UPTREND - High confidence bullish signal
 - **scoreTotal 3.0-6.9**: NEUTRAL - Mixed signals, wait for clarity
 - **scoreTotal < 3.0**: DOWNTREND - Bearish signal, avoid longs
 
-## Available Indicators
+**Divergence Types**:
+- **BULLISH_DIV**: Price lower low + indicator higher low = potential reversal up
+- **BEARISH_DIV**: Price higher high + indicator lower high = potential reversal down
+- **HIDDEN_BULLISH**: Trend continuation signal in uptrend
+- **HIDDEN_BEARISH**: Trend continuation signal in downtrend
+- **NONE**: No divergence detected
 
-### Trend Indicators (8)
-- **SMA** (Simple Moving Average) - Weight: 1.0
-- **EMA** (Exponential Moving Average) - Weight: 1.0
-- **DEMA** (Double Exponential MA) - Weight: 1.0
-- **TRIMA** (Triangular MA) - Weight: 0.5
-- **WMA** (Weighted MA) - Weight: 0.5
-- **KAMA** (Kaufman Adaptive MA) - Weight: 0.5
-- **T3** (Tillson T3) - Weight: 0.5
-- **MESA** (MESA Adaptive MA) - Weight: 1.0
+## Available Indicators (29)
 
-### Momentum Indicators (10)
-- **RSI** (Relative Strength Index) - Weight: 1.0
-- **MACD** (Moving Average Convergence Divergence) - Weight: 1.0
-- **AROON** - Weight: 1.0
-- **CCI** (Commodity Channel Index) - Weight: 1.0
-- **CMO** (Chande Momentum Oscillator) - Weight: 0.5
-- **MOM** (Momentum) - Weight: 0.5
-- **PPO** (Percentage Price Oscillator) - Weight: 0.5
-- **APO** (Absolute Price Oscillator) - Weight: 1.0
-- **ROC** (Rate of Change) - Weight: 0.5
-- **KDJ** (Stochastic with J line) - Weight: 1.0
+### Core Indicators (10) - Weight: 1.0
+- **RSI** (Relative Strength Index) - Momentum oscillator with divergence detection
+- **MACD** (Moving Average Convergence Divergence) - Trend-following momentum with divergence
+- **BB** (Bollinger Bands) - NEW: Volatility bands with squeeze detection
+- **OBV** (On-Balance Volume) - NEW: Volume-price divergence indicator
+- **ICHIMOKU** (Ichimoku Cloud) - NEW: Multi-component trend system (crypto-optimized 10/30/60)
+- **EMA** (Exponential Moving Average) - Short/long crossover
+- **SMA** (Simple Moving Average) - Short/long crossover
+- **MFI** (Money Flow Index) - Volume-weighted RSI
+- **KDJ** (Stochastic with J line) - Overbought/oversold with momentum
+- **SAR** (Parabolic SAR) - Trend reversal detection
 
-### Directional Indicators (3)
-- **ADX** (Average Directional Index) - Weight: 0.5
-- **DMI** (Directional Movement Index) - Weight: 0.5
-- **SAR** (Parabolic SAR) - Weight: 1.0
+### Strong Indicators (5) - Weight: 0.75
+- **DEMA** (Double Exponential MA) - Reduced lag moving average
+- **MESA** (MESA Adaptive MA) - Ehlers Hilbert Transform based
+- **CCI** (Commodity Channel Index) - Cyclical trend identification
+- **AROON** - Trend timing indicator
+- **APO** (Absolute Price Oscillator) - Trend strength
 
-### Volume Indicators (1)
-- **MFI** (Money Flow Index) - Weight: 1.0
-
-### Other Indicators (2)
-- **TRIX** (Triple Exponential MA) - Weight: 0.5
-- **CAD** (Chande Momentum) - Weight: 1.0
+### Supporting Indicators (14) - Weight: 0.5
+- **ADX** (Average Directional Index) - Trend strength
+- **DMI** (Directional Movement Index) - Trend direction
+- **CMO** (Chande Momentum Oscillator) - Modified RSI
+- **KAMA** (Kaufman Adaptive MA) - Volatility-adjusted MA
+- **MOMI** (Momentum) - Rate of price change
+- **PPO** (Percentage Price Oscillator) - Normalized MACD
+- **ROC** (Rate of Change) - Percentage momentum
+- **TRIMA** (Triangular MA) - Smoothed moving average
+- **TRIX** (Triple Exponential MA) - Smoothed momentum
+- **T3** (Tillson T3) - Low-lag smooth MA
+- **WMA** (Weighted MA) - Linearly weighted
+- **VWAP** (Volume Weighted Average Price) - NEW: Institutional reference
+- **ATR_SIGNAL** (ATR Volatility Signal) - NEW: Volatility-based signals
+- **CAD** (CMO with Regime-Aware Mean Reversion) - Adaptive momentum
 
 See [references/indicators.md](references/indicators.md) for detailed indicator explanations.
 
@@ -196,23 +242,43 @@ For ongoing market surveillance:
 
 ### Common Patterns
 
-**High Conviction Bullish**:
-- Score >= 7
+**High Conviction Bullish** (STRONG_BUY):
+- 7-tier signal: STRONG_BUY or BUY
+- Confidence >= 0.7
 - RSI between 30-70 (not overbought)
 - MACD bullish crossover
-- Price above key moving averages
+- Price above Ichimoku cloud
+- OBV confirms with no bearish divergence
+- Volume confirmation >= 0.7
 - ADX > 25 (strong trend)
-- MFI shows accumulation
+
+**Breakout Setup**:
+- Bollinger Band squeeze detected (squeezeDetected: true)
+- ADX rising from < 20
+- Volume starting to increase
+- Watch for band expansion
 
 **Trend Exhaustion Warning**:
 - Score > 7 BUT RSI > 80 or MFI > 90
-- Suggests overbought conditions despite bullish consensus
+- Bearish divergence on RSI, MACD, or OBV
+- Price above Bollinger upper band (%B > 1.0)
 - Potential reversal or pullback incoming
+
+**Divergence-Based Reversal**:
+- Bearish divergence: Prepare for potential top
+- Bullish divergence: Watch for potential bottom
+- OBV divergence is most reliable (volume precedes price)
 
 **False Breakout**:
 - Strong price move BUT ADX < 20
-- Low volume (MFI neutral/bearish)
+- Low volume (volumeConfirmation < 0.5)
+- OBV not confirming price move
 - Likely whipsaw or temporary spike
+
+**Ichimoku Confirmation**:
+- Price above cloud + Tenkan above Kijun = Strong bullish
+- Price below cloud + Tenkan below Kijun = Strong bearish
+- Price inside cloud = No-trade zone, wait for clarity
 
 ## Limitations
 
@@ -298,18 +364,23 @@ This skill is designed to work seamlessly with CoinGecko MCP tools:
 ```
 Bitcoin Technical Analysis (7-day period)
 
-📊 Overall Signal: STRONG_UPTREND
-🎯 Confidence Score: 8.5/24.0
+📊 7-Tier Signal: STRONG_BUY
+🎯 Confidence: 78%
 💰 Current Price: $45,234.56 (+3.45% 24h)
+📈 Volume Confirmation: 85%
 
 Key Indicators:
-✅ RSI: BUY (38.2 - healthy level)
-✅ MACD: BUY (bullish crossover)
-✅ EMA: BUY (price above all EMAs)
+✅ RSI: BUY (38.2 - healthy level, no divergence)
+✅ MACD: BUY (bullish crossover, no divergence)
+✅ Bollinger: BUY (price near upper band, no squeeze)
+✅ OBV: BUY (volume confirms trend, no divergence)
+✅ Ichimoku: BUY (price above cloud)
 ✅ Volume: ACCUMULATION (MFI bullish)
 
-Recommendation: Strong buy signal with healthy fundamentals. 
-No overbought conditions detected.
+Warnings: None
+
+Recommendation: Strong buy signal with volume confirmation.
+No divergences or overbought conditions detected.
 ```
 
 ### Comparative Analysis Response
