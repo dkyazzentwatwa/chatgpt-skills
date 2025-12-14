@@ -95,6 +95,96 @@ Meta-skill for designing and building new agent skills. Provides templates, best
 
 **Use for**: Creating new skills, skill architecture, workflow design
 
+### 📊 Data Storyteller
+**`data-storyteller/`**
+
+Transform CSV/Excel data into narrative reports with auto-generated insights, visualizations, and PDF/HTML export. Automatically detects data types, finds patterns, creates relevant charts, and writes plain-English summaries.
+
+**Key Features**:
+- **Auto-Detection**: Column types, patterns, correlations, time series
+- **Smart Visualizations**: Distribution plots, correlation heatmaps, trend charts
+- **Narrative Insights**: Plain-English findings, recommendations, warnings
+- **Multiple Exports**: PDF reports, HTML dashboards, JSON data
+- **Chart Styles**: Business, scientific, minimal, dark, colorful themes
+
+**Scripts**:
+- `data_storyteller.py` - Main analysis and reporting engine
+
+**Use for**: Data analysis, automated reporting, insight generation, executive summaries, exploratory data analysis
+
+### 🖼️ Image Enhancement Suite
+**`image-enhancement-suite/`**
+
+Professional image processing toolkit for batch resize, crop, watermark, color correction, format conversion, and compression. Supports single or batch operations with quality presets for web, print, and social media.
+
+**Key Features**:
+- **Resize & Crop**: Smart resizing, aspect ratio preservation, content-aware cropping
+- **Watermarking**: Text or image watermarks with positioning and opacity
+- **Color Correction**: Brightness, contrast, saturation, sharpness adjustments
+- **Format Conversion**: PNG, JPEG, WebP, BMP, TIFF, GIF
+- **Presets**: Instagram, Twitter, Facebook, LinkedIn, print sizes
+- **Batch Processing**: Process entire directories with consistent settings
+
+**Scripts**:
+- `image_enhancer.py` - Main processing engine with CLI
+
+**Use for**: Image optimization, social media assets, watermarking, batch processing, thumbnail generation
+
+### 📝 OCR Document Processor
+**`ocr-document-processor/`**
+
+Extract text from images and scanned PDFs using OCR. Supports multiple languages, structured output (Markdown/JSON), table detection, and batch processing.
+
+**Key Features**:
+- **Multi-Format Input**: PNG, JPEG, TIFF, PDF
+- **100+ Languages**: Full Tesseract language support
+- **Structured Output**: Plain text, Markdown, JSON, HTML, searchable PDF
+- **Table Extraction**: Detect and export tables to CSV
+- **Preprocessing**: Deskew, denoise, threshold for better accuracy
+- **Specialized Parsers**: Receipt scanning, business card extraction
+
+**Scripts**:
+- `ocr_processor.py` - Main OCR engine with preprocessing
+
+**Use for**: Document digitization, text extraction, receipt scanning, business card parsing, PDF searchability
+
+### 🎬 Video to GIF Workshop
+**`video-to-gif/`**
+
+Convert video clips to optimized GIFs with speed control, cropping, text overlays, and file size optimization. Perfect for social media, documentation, and presentations.
+
+**Key Features**:
+- **Clip Selection**: Extract specific time ranges
+- **Speed Control**: Slow motion, speed up, reverse, boomerang
+- **Text Overlays**: Captions, titles, timed text
+- **Effects**: Filters, fades, color adjustments
+- **Optimization**: Smart compression for target file size
+- **Presets**: Twitter, Discord, Slack, Reddit optimized
+
+**Scripts**:
+- `gif_workshop.py` - Main video-to-GIF converter
+
+**Use for**: Social media GIFs, documentation animations, tutorial clips, reaction GIFs
+
+### 💰 Financial Calculator Suite
+**`financial-calculator/`**
+
+Comprehensive financial calculations including loan amortization, investment projections, NPV/IRR analysis, retirement planning, and Monte Carlo simulations.
+
+**Key Features**:
+- **Loan Calculator**: Amortization schedules, prepayment analysis
+- **Investment Calculator**: Compound growth, recurring contributions
+- **NPV/IRR**: Project valuation, payback period
+- **Retirement Planning**: FIRE calculator, withdrawal strategies
+- **Monte Carlo**: Risk analysis with probability distributions
+- **Mortgage Tools**: Affordability, refinance comparison
+- **Visualizations**: Charts for all calculations
+
+**Scripts**:
+- `financial_calc.py` - Main calculation engine with CLI
+
+**Use for**: Loan analysis, investment planning, retirement projections, business valuation, risk assessment
+
 ## Skill Structure
 
 Each skill follows the Claude skills format:

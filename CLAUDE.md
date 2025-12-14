@@ -140,6 +140,36 @@ Meta-skill for building new skills.
 - `package_skill.py`: Create ZIP for distribution
 - `quick_validate.py`: Validate structure
 
+### data-storyteller
+Auto-generate narrative reports from CSV/Excel data.
+- Scripts: `data_storyteller.py`
+- Dependencies: pandas, numpy, matplotlib, seaborn, scipy, reportlab
+- Features: Auto-detection, visualizations, PDF/HTML export, 5 chart styles
+
+### image-enhancement-suite
+Batch image processing toolkit.
+- Scripts: `image_enhancer.py`
+- Dependencies: pillow, opencv-python, numpy
+- Features: Resize, crop, watermark, filters, format conversion, social presets
+
+### ocr-document-processor
+Extract text from images and PDFs using OCR.
+- Scripts: `ocr_processor.py`
+- Dependencies: pytesseract, pillow, PyMuPDF, opencv-python
+- Features: 100+ languages, table extraction, receipt/card parsing, preprocessing
+
+### video-to-gif
+Convert videos to optimized GIFs.
+- Scripts: `gif_workshop.py`
+- Dependencies: moviepy, pillow, imageio, numpy
+- Features: Clipping, speed control, text overlays, size optimization, presets
+
+### financial-calculator
+Comprehensive financial calculations.
+- Scripts: `financial_calc.py`
+- Dependencies: numpy, numpy-financial, pandas, matplotlib, scipy
+- Features: Loans, investments, NPV/IRR, retirement, Monte Carlo simulations
+
 ## Key Design Principles
 
 ### Progressive Disclosure
@@ -218,3 +248,36 @@ The packager:
 - **references/*.md**: Extended documentation, specs, recipes
 
 Keep documentation focused on what's not obvious from code inspection. Avoid listing every file or generic best practices.
+
+## IMPORTANT: Documentation Maintenance
+
+**Whenever making significant feature updates or changes, ALWAYS update:**
+
+1. **CLAUDE.md** (this file):
+   - Update "Existing Skills Reference" section when adding/modifying skills
+   - Update any affected conventions or patterns
+   - Add new skills to the reference list
+
+2. **README.md** (root):
+   - Add new skills to "Available Skills" section with description and features
+   - Update existing skill descriptions when features change
+   - Keep the skill list current and accurate
+
+3. **Individual SKILL.md files**:
+   - Update when adding new features to a skill
+   - Keep examples current with actual API/usage
+   - Document any breaking changes
+
+**What counts as "significant changes":**
+- Adding a new skill
+- Adding new indicators/features to existing skills
+- Changing output formats or APIs
+- Adding new scripts or capabilities
+- Bug fixes that change behavior
+- New configuration options
+
+**Documentation update checklist:**
+- [ ] CLAUDE.md updated (if repo-wide changes)
+- [ ] README.md updated (if new/modified skills)
+- [ ] SKILL.md updated (if skill features changed)
+- [ ] references/*.md updated (if detailed docs affected)
