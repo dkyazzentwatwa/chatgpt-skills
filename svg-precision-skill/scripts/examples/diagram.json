@@ -1,0 +1,24 @@
+{
+  "canvas": {"width": 900, "height": 520, "viewBox": "0 0 900 520", "units": "px", "background": "#ffffff"},
+  "defs": {
+    "markers": [
+      {"id": "arrow", "markerWidth": 10, "markerHeight": 10, "refX": 9, "refY": 5, "orient": "auto", "pathD": "M0 0 L10 5 L0 10 Z", "style": {"fill": "#444"}}
+    ]
+  },
+  "elements": [
+    {"type": "rect", "x": 80, "y": 120, "width": 240, "height": 90, "rx": 14, "ry": 14, "style": {"fill": "#f7f7f7", "stroke": "#444", "strokeWidth": 2}},
+    {"type": "text", "x": 200, "y": 165, "text": "Start", "anchor": "middle", "baseline": "middle", "style": {"fill": "#111", "fontSize": 20, "fontFamily": "Inter, system-ui, sans-serif"}},
+
+    {"type": "rect", "x": 520, "y": 120, "width": 280, "height": 90, "rx": 14, "ry": 14, "style": {"fill": "#f7f7f7", "stroke": "#444", "strokeWidth": 2}},
+    {"type": "text", "x": 660, "y": 165, "text": "Process", "anchor": "middle", "baseline": "middle", "style": {"fill": "#111", "fontSize": 20, "fontFamily": "Inter, system-ui, sans-serif"}},
+
+    {"type": "line", "x1": 320, "y1": 165, "x2": 520, "y2": 165,
+     "style": {"stroke": "#444", "strokeWidth": 2, "markerEnd": "url(#arrow)"}},
+
+    {"type": "rect", "x": 520, "y": 300, "width": 280, "height": 90, "rx": 14, "ry": 14, "style": {"fill": "#f7f7f7", "stroke": "#444", "strokeWidth": 2}},
+    {"type": "text", "x": 660, "y": 345, "text": "Done", "anchor": "middle", "baseline": "middle", "style": {"fill": "#111", "fontSize": 20, "fontFamily": "Inter, system-ui, sans-serif"}},
+
+    {"type": "path", "d": "M660 210 L660 300", "style": {"fill": "none", "stroke": "#444", "strokeWidth": 2, "markerEnd": "url(#arrow)"}}
+  ],
+  "metadata": {"title": "Diagram example"}
+}

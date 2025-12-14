@@ -1,0 +1,17 @@
+{
+  "canvas": {"width": 800, "height": 450, "viewBox": "0 0 800 450", "units": "px", "background": "#ffffff"},
+  "elements": [
+    {"type": "rect", "x": 80, "y": 50, "width": 670, "height": 320, "style": {"fill": "none", "stroke": "#e6e6e6"}},
+    {"type": "line", "x1": 80, "y1": 370, "x2": 750, "y2": 370, "style": {"stroke": "#999", "strokeWidth": 1}},
+    {"type": "rect", "x": 140, "y": 250, "width": 90, "height": 120, "style": {"fill": "#4c6ef5"}},
+    {"type": "rect", "x": 270, "y": 190, "width": 90, "height": 180, "style": {"fill": "#4c6ef5"}},
+    {"type": "rect", "x": 400, "y": 140, "width": 90, "height": 230, "style": {"fill": "#4c6ef5"}},
+    {"type": "rect", "x": 530, "y": 210, "width": 90, "height": 160, "style": {"fill": "#4c6ef5"}},
+    {"type": "text", "x": 400, "y": 30, "text": "Revenue by Quarter", "anchor": "middle", "baseline": "middle", "style": {"fill": "#111", "fontSize": 22, "fontWeight": 700, "fontFamily": "Inter, system-ui, sans-serif"}},
+    {"type": "text", "x": 185, "y": 405, "text": "Q1", "anchor": "middle", "style": {"fill": "#666", "fontSize": 14}},
+    {"type": "text", "x": 315, "y": 405, "text": "Q2", "anchor": "middle", "style": {"fill": "#666", "fontSize": 14}},
+    {"type": "text", "x": 445, "y": 405, "text": "Q3", "anchor": "middle", "style": {"fill": "#666", "fontSize": 14}},
+    {"type": "text", "x": 575, "y": 405, "text": "Q4", "anchor": "middle", "style": {"fill": "#666", "fontSize": 14}}
+  ],
+  "metadata": {"title": "Bar chart example"}
+}

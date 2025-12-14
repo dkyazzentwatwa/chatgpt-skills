@@ -1,0 +1,18 @@
+{
+  "canvas": {"width": 900, "height": 600, "viewBox": "0 0 900 600", "units": "mm", "background": "#ffffff"},
+  "defs": {
+    "markers": [
+      {"id": "dimArrow", "markerWidth": 8, "markerHeight": 8, "refX": 4, "refY": 4, "orient": "auto", "pathD": "M0 4 L4 0 L8 4 L4 8 Z", "style": {"fill": "#111"}}
+    ]
+  },
+  "elements": [
+    {"type": "rect", "x": 200, "y": 200, "width": 320, "height": 140, "style": {"fill": "none", "stroke": "#111", "strokeWidth": 1, "shapeRendering": "geometricPrecision"}},
+
+    {"type": "line", "x1": 200, "y1": 360, "x2": 200, "y2": 390, "style": {"stroke": "#111", "strokeWidth": 1}},
+    {"type": "line", "x1": 520, "y1": 360, "x2": 520, "y2": 390, "style": {"stroke": "#111", "strokeWidth": 1}},
+
+    {"type": "line", "x1": 200, "y1": 390, "x2": 520, "y2": 390, "style": {"stroke": "#111", "strokeWidth": 1, "markerStart": "url(#dimArrow)", "markerEnd": "url(#dimArrow)"}},
+    {"type": "text", "x": 360, "y": 415, "text": "320 mm", "anchor": "middle", "baseline": "middle", "style": {"fill": "#111", "fontSize": 16}}
+  ],
+  "metadata": {"title": "Dimension example", "desc": "Units: mm"}
+}

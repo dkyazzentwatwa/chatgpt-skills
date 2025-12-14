@@ -1,0 +1,12 @@
+{
+  "canvas": {"width": 1440, "height": 900, "viewBox": "0 0 1440 900", "units": "px", "background": "#f2f2f2"},
+  "elements": [
+    {"type": "rect", "x": 360, "y": 180, "width": 720, "height": 480, "rx": 24, "ry": 24, "style": {"fill": "#ffffff", "stroke": "#e6e6e6"}},
+    {"type": "text", "x": 420, "y": 260, "text": "Account Settings", "style": {"fill": "#111", "fontSize": 28, "fontWeight": 700, "fontFamily": "Inter, system-ui, sans-serif"}},
+    {"type": "rect", "x": 420, "y": 310, "width": 600, "height": 56, "rx": 12, "ry": 12, "style": {"fill": "#fafafa", "stroke": "#dedede"}},
+    {"type": "text", "x": 448, "y": 345, "text": "Email", "baseline": "middle", "style": {"fill": "#777", "fontSize": 14, "fontFamily": "Inter, system-ui, sans-serif"}},
+    {"type": "rect", "x": 420, "y": 390, "width": 200, "height": 52, "rx": 14, "ry": 14, "style": {"fill": "#4c6ef5"}},
+    {"type": "text", "x": 520, "y": 416, "text": "Save", "anchor": "middle", "baseline": "middle", "style": {"fill": "#fff", "fontSize": 18, "fontWeight": 700, "fontFamily": "Inter, system-ui, sans-serif"}}
+  ],
+  "metadata": {"title": "UI card example"}
+}

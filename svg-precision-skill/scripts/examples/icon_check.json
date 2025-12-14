@@ -1,0 +1,8 @@
+{
+  "canvas": {"width": 24, "height": 24, "viewBox": "0 0 24 24", "units": "px", "background": "#ffffff"},
+  "elements": [
+    {"type": "path", "d": "M4 12 L20 12", "style": {"fill": "none", "stroke": "#111", "strokeWidth": 2, "strokeLinecap": "round"}},
+    {"type": "path", "d": "M12 4 L12 20", "style": {"fill": "none", "stroke": "#111", "strokeWidth": 2, "strokeLinecap": "round"}}
+  ],
+  "metadata": {"title": "Plus icon"}
+}
