@@ -1,6 +1,6 @@
 ---
 name: crypto-ta-analyzer
-description: Comprehensive cryptocurrency and stock technical analysis using 29+ proven indicators including Bollinger Bands, Ichimoku Cloud, and OBV with divergence detection. Generates 7-tier trading signals (STRONG_BUY to STRONG_SELL) with volume confirmation, squeeze detection, and divergence warnings. Supports multiple data sources beyond CoinGecko.
+description: Technical analysis with 29+ indicators (BB, Ichimoku, RSI, MACD). Generates 7-tier trading signals with divergence detection, volume confirmation, and squeeze alerts for crypto and stocks.
 ---
 
 # Crypto & Stock Technical Analysis

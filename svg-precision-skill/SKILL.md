@@ -1,6 +1,6 @@
 ---
 name: svg-precision
-description: Deterministic, accurate SVG generation, validation, and preview rendering using bundled Python scripts. Use when asked to create or modify SVGs for icons, diagrams/flowcharts, charts (bar/line/pie), UI mockups/wireframes, or technical drawings (dimensions/scale), especially when structural correctness, viewBox/units, reusable defs, and cross-viewer predictability matter.
+description: Deterministic SVG generation, validation, and rendering. Use for icons, diagrams, charts, UI mockups, or technical drawings requiring structural correctness and cross-viewer compatibility.
 ---
 
 # svg-precision

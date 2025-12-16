@@ -1,0 +1,2 @@
+langdetect>=1.0.9
+pandas>=2.0.0

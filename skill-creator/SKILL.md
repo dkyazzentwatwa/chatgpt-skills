@@ -1,6 +1,6 @@
 ---
 name: skill-creator
-description: Guide for creating effective skills. This skill should be used when users want to create a new skill (or update an existing skill) that extends ChatGPT's capabilities with specialized knowledge, workflows, or tool integrations.
+description: Guide for creating effective skills. Use when building new skills or updating existing ones that extend ChatGPT with specialized knowledge, workflows, or tool integrations.
 license: Complete terms in LICENSE.txt
 ---
 

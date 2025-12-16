@@ -1,0 +1,6 @@
+pypdf>=3.0.0
+python-docx>=0.8.11
+python-pptx>=0.6.21
+openpyxl>=3.0.10
+beautifulsoup4>=4.11.1
+reportlab>=3.6.12

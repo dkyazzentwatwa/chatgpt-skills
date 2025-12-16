@@ -1,0 +1,4 @@
+pyyaml>=6.0
+toml>=0.10.0
+xmltodict>=0.13.0
+pandas>=2.0.0

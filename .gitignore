@@ -1,0 +1,59 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.venv/
+venv/
+ENV/
+env/
+*.egg-info/
+dist/
+build/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs and temp files
+*.log
+*.tmp
+reports/
+temp/
+*.cache
+
+# Secrets and credentials
+.env
+.env.*
+!.env.example
+secrets/
+credentials/
+*.pem
+*.key
+!**/assets/*.key  # Allow key files in assets folders (may be sample data)
+
+# Output files
+output/
+*.pdf
+*.png
+*.jpg
+*.svg
+!**/assets/**  # Allow all files in assets folders
+!**/references/**  # Allow all files in references folders
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Skill-specific ignores
+audit_all_skills.py
+verify_docs.py

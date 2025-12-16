@@ -1,6 +1,6 @@
 ---
 name: qr-code-generator
-description: Generate QR codes that encode a URL (and optional UTM params), export as PNG and/or SVG, optionally add a caption (the URL or a short label), and output download links. Use when asked to “make a QR code for this link,” “add UTM tracking,” “export SVG,” or “batch-generate QR codes.”
+description: Generate QR codes with URLs and UTM tracking. Exports PNG/SVG with captions. Use for single codes, batch generation, or marketing campaigns with tracking parameters.
 ---
 
 # QR Code Generator

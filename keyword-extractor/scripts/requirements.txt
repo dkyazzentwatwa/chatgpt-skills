@@ -1,0 +1,5 @@
+scikit-learn>=1.2.0
+nltk>=3.8.0
+pandas>=2.0.0
+matplotlib>=3.7.0
+wordcloud>=1.9.0

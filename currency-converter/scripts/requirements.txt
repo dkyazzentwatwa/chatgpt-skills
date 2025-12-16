@@ -1,0 +1,2 @@
+forex-python>=1.8
+pandas>=2.0.0

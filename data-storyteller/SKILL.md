@@ -1,6 +1,6 @@
 ---
 name: data-storyteller
-description: Transform CSV/Excel data into narrative reports with auto-generated insights, visualizations, and PDF export. Auto-detects data types, finds patterns, creates relevant charts, and writes plain-English summaries.
+description: Transform CSV/Excel data into narrative reports with auto-generated insights, visualizations, and PDF export. Auto-detects patterns and creates plain-English summaries.
 ---
 
 # Data Storyteller

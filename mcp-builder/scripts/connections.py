@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 """Lightweight connection handling for MCP servers."""
 
 from abc import ABC, abstractmethod

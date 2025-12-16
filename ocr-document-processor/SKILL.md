@@ -1,6 +1,6 @@
 ---
 name: ocr-document-processor
-description: Extract text from images and scanned PDFs using OCR. Supports multiple languages, structured output (markdown/JSON), table detection, and batch processing. Converts scanned documents to searchable text.
+description: Extract text from images and scanned PDFs using OCR. Supports 100+ languages, table detection, structured output (markdown/JSON), and batch processing.
 ---
 
 # OCR Document Processor

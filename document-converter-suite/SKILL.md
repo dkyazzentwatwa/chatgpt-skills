@@ -1,6 +1,6 @@
 ---
 name: document-converter-suite
-description: Convert between 8 document formats (PDF, DOCX, PPTX, XLSX, TXT, CSV, Markdown, HTML) in a restricted Python environment. Use for best-effort, text-first conversions, batch conversions, and extracting slide/table/text content into editable formats.
+description: Convert between 8 formats (PDF, DOCX, PPTX, XLSX, TXT, CSV, MD, HTML). Best-effort text extraction, batch processing, and document format transformation.
 ---
 
 # Document Converter Suite

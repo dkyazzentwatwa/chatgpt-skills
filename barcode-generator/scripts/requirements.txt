@@ -1,0 +1,2 @@
+python-barcode>=0.15.0
+Pillow>=10.0.0

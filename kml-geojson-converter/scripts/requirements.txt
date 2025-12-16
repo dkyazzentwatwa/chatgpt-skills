@@ -1,0 +1,2 @@
+geopandas>=0.14.0
+fiona>=1.9.0
