@@ -1,6 +1,6 @@
 ---
 name: financial-calculator
-description: Financial calculations: loans, investments, NPV/IRR, retirement planning, Monte Carlo simulations. Generates tables, charts, and exportable reports.
+description: "Financial calculations: loans, investments, NPV/IRR, retirement planning, Monte Carlo simulations. Generates tables, charts, and exportable reports."
 ---
 
 # Financial Calculator Suite

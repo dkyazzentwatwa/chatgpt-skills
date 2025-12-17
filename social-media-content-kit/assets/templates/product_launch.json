@@ -1,0 +1,38 @@
+{
+  "name": "product_launch",
+  "description": "Product launch announcement template",
+  "size": [1080, 1080],
+  "background": {
+    "type": "gradient",
+    "colors": ["#4A90E2", "#50E3C2"]
+  },
+  "elements": [
+    {
+      "type": "text",
+      "name": "headline",
+      "position": [540, 350],
+      "font_size": 72,
+      "color": "#FFFFFF",
+      "align": "center",
+      "weight": "bold"
+    },
+    {
+      "type": "text",
+      "name": "subheadline",
+      "position": [540, 500],
+      "font_size": 36,
+      "color": "#FFFFFF",
+      "align": "center",
+      "weight": "normal"
+    },
+    {
+      "type": "text",
+      "name": "details",
+      "position": [540, 700],
+      "font_size": 24,
+      "color": "#FFFFFF",
+      "align": "center",
+      "weight": "normal"
+    }
+  ]
+}

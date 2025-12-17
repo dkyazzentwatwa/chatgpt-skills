@@ -1,0 +1,39 @@
+{
+  "urgency": [
+    "now", "today", "immediately", "instant", "urgent", "hurry", "quick",
+    "fast", "limited", "deadline", "before", "expires", "soon", "instantly",
+    "act now", "don't wait", "time-sensitive", "last chance"
+  ],
+  "value": [
+    "proven", "essential", "guaranteed", "best", "ultimate", "perfect",
+    "incredible", "amazing", "powerful", "effective", "valuable", "exclusive",
+    "premium", "professional", "expert", "top", "certified", "trusted",
+    "quality", "superior", "outstanding", "remarkable"
+  ],
+  "curiosity": [
+    "secret", "hidden", "revealed", "truth", "discover", "unlock", "expose",
+    "behind", "little-known", "surprising", "shocking", "unexpected",
+    "you won't believe", "what nobody tells you", "insider", "confidential",
+    "mystery", "uncover", "forbidden"
+  ],
+  "fear": [
+    "warning", "danger", "mistake", "avoid", "never", "don't", "stop",
+    "wrong", "worst", "failure", "lose", "miss", "risk", "beware",
+    "critical", "harmful", "threat"
+  ],
+  "greed": [
+    "free", "bonus", "extra", "more", "double", "maximize", "increase",
+    "boost", "profit", "gain", "save", "earn", "win", "rewards",
+    "unlimited", "100%", "guarantee"
+  ],
+  "social": [
+    "popular", "trending", "viral", "everyone", "join", "community",
+    "millions", "thousands", "followers", "fans", "love", "favorite",
+    "recommended", "top-rated", "best-selling"
+  ],
+  "trust": [
+    "research", "studies", "science", "data", "facts", "evidence",
+    "results", "statistics", "survey", "analysis", "official", "legitimate",
+    "verified", "authentic", "genuine"
+  ]
+}

@@ -1,6 +1,6 @@
 ---
 name: image-enhancement-suite
-description: Batch image processing: resize, crop, watermark, color correction, format conversion, compression. Quality presets for web, print, and social media.
+description: "Batch image processing: resize, crop, watermark, color correction, format conversion, compression. Quality presets for web, print, and social media."
 ---
 
 # Image Enhancement Suite
