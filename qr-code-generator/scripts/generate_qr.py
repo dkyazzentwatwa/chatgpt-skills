@@ -153,6 +153,33 @@ def PathWrite(path: str, content: str):
     Path(path).parent.mkdir(parents=True, exist_ok=True)
     Path(path).write_text(content, encoding="utf-8")
 
+def generate_qr(
+    url: str,
+    png: str = "",
+    svg: str = "",
+    error: str = "M",
+    box_size: int = 10,
+    border: int = 4,
+    caption_label: str | None = None,
+    show_url: bool = False,
+    utm: dict[str, str] | None = None,
+) -> str:
+    """Generate QR exports and return the final encoded URL."""
+    url = validate_url(url)
+    utm = utm or {}
+    final_url = add_utm(url, utm) if any(utm.values()) else url
+
+    qr = make_qr(final_url, error, box_size, border)
+
+    if png:
+        export_png(qr, png, caption_label, show_url, final_url)
+
+    if svg:
+        export_svg(qr, svg, caption_label, show_url, final_url)
+
+    return final_url
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", required=True, help="Destination URL to encode.")
@@ -170,7 +197,9 @@ def main():
     ap.add_argument("--utm-term", default="", dest="utm_term")
     args = ap.parse_args()
 
-    url = validate_url(args.url)
+    if not args.png and not args.svg:
+        args.png = "qr.png"
+
     utm = {
         "source": args.utm_source,
         "medium": args.utm_medium,
@@ -178,22 +207,17 @@ def main():
         "content": args.utm_content,
         "term": args.utm_term,
     }
-    final_url = add_utm(url, utm) if any(utm.values()) else url
-
-    qr = make_qr(final_url, args.error, args.box_size, args.border)
-
-    caption_label = args.caption_label.strip() or None
-
-    if not args.png and not args.svg:
-        # Default output
-        args.png = "qr.png"
-
-    if args.png:
-        export_png(qr, args.png, caption_label, args.show_url, final_url)
-
-    if args.svg:
-        export_svg(qr, args.svg, caption_label, args.show_url, final_url)
-
+    final_url = generate_qr(
+        args.url,
+        png=args.png,
+        svg=args.svg,
+        error=args.error,
+        box_size=args.box_size,
+        border=args.border,
+        caption_label=args.caption_label.strip() or None,
+        show_url=args.show_url,
+        utm=utm,
+    )
     print(final_url)
 
 if __name__ == "__main__":

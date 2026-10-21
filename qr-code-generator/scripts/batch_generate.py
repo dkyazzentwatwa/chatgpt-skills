@@ -13,9 +13,11 @@ from __future__ import annotations
 import argparse
 import csv
 import os
-import subprocess
 import sys
 from pathlib import Path
+
+from generate_qr import generate_qr
+
 
 def main():
     ap = argparse.ArgumentParser()
@@ -28,7 +30,6 @@ def main():
 
     Path(args.outdir).mkdir(parents=True, exist_ok=True)
 
-    script = Path(__file__).with_name("generate_qr.py")
     with open(args.csv, newline="", encoding="utf-8") as f:
         reader = csv.DictReader(f)
         for row in reader:
@@ -41,13 +42,19 @@ def main():
             png = os.path.join(args.outdir, f"{_id}.png") if args.format in ("png","both") else ""
             svg = os.path.join(args.outdir, f"{_id}.svg") if args.format in ("svg","both") else ""
 
-            cmd = [sys.executable, str(script), "--url", url, "--error", args.error]
-            if png: cmd += ["--png", png]
-            if svg: cmd += ["--svg", svg]
-            if label: cmd += ["--caption-label", label]
-            if args.show_url: cmd += ["--show-url"]
-
-            subprocess.check_call(cmd)
+            try:
+                final_url = generate_qr(
+                    url,
+                    png=png,
+                    svg=svg,
+                    error=args.error,
+                    caption_label=label or None,
+                    show_url=args.show_url,
+                )
+            except Exception as exc:
+                print(f"ERROR: {exc}", file=sys.stderr)
+                raise SystemExit(1) from exc
+            print(final_url)
 
 if __name__ == "__main__":
     main()
