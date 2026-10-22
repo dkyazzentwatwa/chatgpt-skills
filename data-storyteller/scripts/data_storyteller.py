@@ -189,13 +189,14 @@ class DataStoryteller:
             return self._profile
 
         df = self.df
+        duplicate_count = df.duplicated().sum()
         profile = {
             'name': self.name,
             'rows': len(df),
             'columns': len(df.columns),
             'memory_mb': df.memory_usage(deep=True).sum() / (1024 * 1024),
-            'duplicates': df.duplicated().sum(),
-            'duplicate_pct': (df.duplicated().sum() / len(df)) * 100,
+            'duplicates': duplicate_count,
+            'duplicate_pct': (duplicate_count / len(df)) * 100,
             'column_types': {},
             'missing_summary': {},
             'generated_at': datetime.now().isoformat(),
